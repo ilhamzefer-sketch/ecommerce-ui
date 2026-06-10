@@ -62,8 +62,8 @@ export function StatusPage() {
               <strong>{state.responseMs}ms</strong>
             </div>
             <div>
-              <span>Region</span>
-              <strong>AZ-East-1</strong>
+              <span>Sorğu yolu</span>
+              <strong>/api/auth/status</strong>
             </div>
           </div>
         </>

@@ -1,4 +1,4 @@
-import { hasErrors, isEmail, minLength, required } from "./validation";
+import { hasErrors, isEmail, mapDetailsToErrors, minLength, required } from "./validation";
 
 describe("validation helpers", () => {
   it("validates required values", () => {
@@ -15,5 +15,11 @@ describe("validation helpers", () => {
     expect(minLength("1234567", 8, "Qısa şifrə")).toBe("Qısa şifrə");
     expect(hasErrors({ email: undefined, password: "Qısa şifrə" })).toBe(true);
     expect(hasErrors({ email: undefined })).toBe(false);
+  });
+
+  it("maps backend details to known form fields", () => {
+    expect(mapDetailsToErrors({ email: "Email should be valid", token: "Token is required" }, ["email"])).toEqual({
+      email: "Email should be valid"
+    });
   });
 });

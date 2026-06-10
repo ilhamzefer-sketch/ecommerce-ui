@@ -1,8 +1,8 @@
 import { KeyRound } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { getFriendlyErrorMessage } from "../../../shared/api/api-error";
-import { hasErrors, minLength, required, type ValidationErrors } from "../../../shared/forms/validation";
+import { ApiError, getFriendlyErrorMessage } from "../../../shared/api/api-error";
+import { hasErrors, mapDetailsToErrors, minLength, required, type ValidationErrors } from "../../../shared/forms/validation";
 import { BrandMark } from "../../../shared/ui/BrandMark";
 import { Button } from "../../../shared/ui/Button";
 import { Notice } from "../../../shared/ui/Notice";
@@ -45,10 +45,20 @@ export function ResetPasswordPage() {
 
     setIsSubmitting(true);
     try {
-      const response = await resetPassword({ token, newPassword });
-      setSuccessMessage(response.message ?? "Şifrəniz uğurla yeniləndi.");
+      await resetPassword({ token, newPassword });
+      setSuccessMessage("Şifrəniz yeniləndi. İndi giriş edə bilərsiniz.");
     } catch (error) {
-      setFormError(getFriendlyErrorMessage(error));
+      const fallback =
+        error instanceof ApiError && error.status === 401
+          ? "Keçid linki etibarsızdır və ya vaxtı keçib."
+          : "Məlumatları yoxlayın və yenidən cəhd edin.";
+      setFormError(getFriendlyErrorMessage(error, fallback));
+      if (error && typeof error === "object" && "details" in error) {
+        setErrors(mapDetailsToErrors<ResetPasswordField>((error as { details?: Record<string, string> }).details, [
+          "newPassword",
+          "confirmPassword"
+        ]));
+      }
     } finally {
       setIsSubmitting(false);
     }

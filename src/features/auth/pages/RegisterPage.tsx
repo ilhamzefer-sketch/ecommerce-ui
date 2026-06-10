@@ -2,7 +2,7 @@ import { CheckCircle2 } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { getFriendlyErrorMessage } from "../../../shared/api/api-error";
-import { hasErrors, isEmail, minLength, required, type ValidationErrors } from "../../../shared/forms/validation";
+import { hasErrors, isEmail, mapDetailsToErrors, minLength, required, type ValidationErrors } from "../../../shared/forms/validation";
 import { BrandMark } from "../../../shared/ui/BrandMark";
 import { Button } from "../../../shared/ui/Button";
 import { Notice } from "../../../shared/ui/Notice";
@@ -59,16 +59,24 @@ export function RegisterPage() {
 
     setIsSubmitting(true);
     try {
-      const response = await register({
+      await register({
         username: form.username.trim(),
         email: form.email.trim(),
         password: form.password,
         firstName: form.firstName.trim() || undefined,
         lastName: form.lastName.trim() || undefined
       });
-      setSuccessMessage(response.message ?? "Qeydiyyat uğurla tamamlandı. E-poçtunuzu təsdiqləyin.");
+      setSuccessMessage("Qeydiyyat tamamlandı. E-poçtunuzu yoxlayın və sonra giriş edin.");
     } catch (error) {
-      setFormError(getFriendlyErrorMessage(error));
+      setFormError(getFriendlyErrorMessage(error, "Məlumatları yoxlayın və yenidən cəhd edin."));
+      if (error && typeof error === "object" && "details" in error) {
+        setErrors(mapDetailsToErrors<RegisterField>((error as { details?: Record<string, string> }).details, [
+          "username",
+          "email",
+          "password",
+          "confirmPassword"
+        ]));
+      }
     } finally {
       setIsSubmitting(false);
     }

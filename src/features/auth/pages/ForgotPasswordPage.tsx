@@ -2,7 +2,7 @@ import { MailCheck } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { getFriendlyErrorMessage } from "../../../shared/api/api-error";
-import { hasErrors, isEmail, required, type ValidationErrors } from "../../../shared/forms/validation";
+import { hasErrors, isEmail, mapDetailsToErrors, required, type ValidationErrors } from "../../../shared/forms/validation";
 import { BrandMark } from "../../../shared/ui/BrandMark";
 import { Button } from "../../../shared/ui/Button";
 import { Notice } from "../../../shared/ui/Notice";
@@ -37,10 +37,13 @@ export function ForgotPasswordPage() {
 
     setIsSubmitting(true);
     try {
-      const response = await forgotPassword({ email: email.trim() });
-      setSuccessMessage(response.message ?? "Şifrə yeniləmə təlimatı göndərildi.");
+      await forgotPassword({ email: email.trim() });
+      setSuccessMessage("Əgər bu e-poçt sistemdə varsa, şifrə bərpa keçidi göndərildi.");
     } catch (error) {
-      setFormError(getFriendlyErrorMessage(error));
+      setFormError(getFriendlyErrorMessage(error, "E-poçt ünvanını yoxlayın və yenidən cəhd edin."));
+      if (error && typeof error === "object" && "details" in error) {
+        setErrors(mapDetailsToErrors<ForgotPasswordField>((error as { details?: Record<string, string> }).details, ["email"]));
+      }
     } finally {
       setIsSubmitting(false);
     }

@@ -16,12 +16,13 @@ export type LogoutMode = "current" | "all";
 
 export type AuthContextValue = {
   status: AuthStatus;
+  sessionExpired: boolean;
   session: AuthSession;
   user: UserProfileResponse | null;
   roles: string[];
-  login: (request: LoginRequest) => Promise<void>;
-  refresh: () => Promise<void>;
-  reloadUser: () => Promise<void>;
+  login: (request: LoginRequest) => Promise<UserProfileResponse>;
+  refresh: () => Promise<AuthSession>;
+  reloadUser: () => Promise<UserProfileResponse>;
   clearSession: () => void;
   logout: (mode?: LogoutMode) => Promise<string | undefined>;
 };

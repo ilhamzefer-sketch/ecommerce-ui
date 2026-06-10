@@ -3,7 +3,7 @@ import { useAuth } from "../../features/auth/use-auth";
 import { PageLoader } from "../ui/PageLoader";
 
 export function ProtectedRoute({ children }: { children: JSX.Element }) {
-  const { status } = useAuth();
+  const { status, sessionExpired } = useAuth();
   const location = useLocation();
 
   if (status === "booting") {
@@ -11,7 +11,16 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
   }
 
   if (status !== "authenticated") {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{
+          from: `${location.pathname}${location.search}${location.hash}`,
+          sessionExpired
+        }}
+      />
+    );
   }
 
   return children;

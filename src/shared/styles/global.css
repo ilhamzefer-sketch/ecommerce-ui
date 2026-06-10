@@ -448,6 +448,12 @@ img {
   background: rgba(255, 255, 255, 0.5);
 }
 
+.auth-result-button {
+  display: flex;
+  width: fit-content;
+  margin: 18px auto 0;
+}
+
 .page-loader {
   display: inline-flex;
   align-items: center;
@@ -726,6 +732,15 @@ img {
 
 .admin-meta strong {
   font-size: 20px;
+  overflow-wrap: anywhere;
+}
+
+.admin-meta p {
+  margin: 0;
+  color: var(--color-carbon);
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .status-card {
@@ -760,6 +775,7 @@ img {
 
 .status-message strong {
   font-size: 18px;
+  overflow-wrap: anywhere;
 }
 
 .status-metrics {
@@ -782,6 +798,10 @@ img {
   color: var(--color-slate);
   font-size: 13px;
   font-weight: 700;
+}
+
+.status-metrics strong {
+  overflow-wrap: anywhere;
 }
 
 .status-actions {

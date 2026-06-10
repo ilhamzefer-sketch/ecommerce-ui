@@ -1,8 +1,10 @@
 import { apiRequest } from "./api-client";
+import { registerSessionBridge } from "../auth/session-bridge";
 
 describe("apiRequest", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    registerSessionBridge(null);
   });
 
   it("parses successful plain text responses", async () => {
@@ -65,5 +67,56 @@ describe("apiRequest", () => {
       status: 0,
       isNetworkError: true
     });
+  });
+
+  it("refreshes once and retries an authenticated request after 401", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ message: "Expired access token" }), {
+          status: 401,
+          headers: { "content-type": "application/json" }
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ username: "admin" }), {
+          status: 200,
+          headers: { "content-type": "application/json" }
+        })
+      );
+
+    vi.stubGlobal("fetch", fetchMock);
+    registerSessionBridge({
+      refreshSession: vi.fn().mockResolvedValue({ accessToken: "new-token" }),
+      onSessionExpired: vi.fn()
+    });
+
+    await expect(apiRequest<{ username: string }>("/api/users/me", { token: "old-token" })).resolves.toEqual({
+      username: "admin"
+    });
+
+    expect((fetchMock.mock.calls[0][1] as RequestInit).headers).toBeInstanceOf(Headers);
+    expect(((fetchMock.mock.calls[0][1] as RequestInit).headers as Headers).get("Authorization")).toBe("Bearer old-token");
+    expect(((fetchMock.mock.calls[1][1] as RequestInit).headers as Headers).get("Authorization")).toBe("Bearer new-token");
+  });
+
+  it("signals session expiry when refresh fails", async () => {
+    const onSessionExpired = vi.fn();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ message: "Expired access token" }), {
+          status: 401,
+          headers: { "content-type": "application/json" }
+        })
+      )
+    );
+    registerSessionBridge({
+      refreshSession: vi.fn().mockRejectedValue(new Error("refresh failed")),
+      onSessionExpired
+    });
+
+    await expect(apiRequest("/api/users/me", { token: "old-token" })).rejects.toMatchObject({ status: 401 });
+    expect(onSessionExpired).toHaveBeenCalled();
   });
 });

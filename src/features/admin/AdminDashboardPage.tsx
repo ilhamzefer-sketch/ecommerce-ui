@@ -16,7 +16,7 @@ type AdminState =
   | { status: "error"; message: string };
 
 export function AdminDashboardPage() {
-  const { session } = useAuth();
+  const { session, user, roles } = useAuth();
   const [state, setState] = useState<AdminState>({ status: "loading" });
 
   const loadDashboard = useCallback(async () => {
@@ -82,8 +82,14 @@ export function AdminDashboardPage() {
               message="Bu səhifə yalnız hazırkı backendin verdiyi ilkin admin statusudur. Məhsul, sifariş və hesabat modulları mövcud deyil."
             />
             <Card className="admin-meta">
-              <span>Backend scope</span>
-              <strong>Minimal admin dashboard</strong>
+              <span>Backend əhatəsi</span>
+              <strong>Minimal admin panel statusu</strong>
+            </Card>
+            <Card className="admin-meta">
+              <span>Aktiv sessiya</span>
+              <strong>{user?.username ?? "Məlumat yoxdur"}</strong>
+              <p>{roles.length > 0 ? roles.join(", ") : "Rol məlumatı yoxdur"}</p>
+              <p>{session.accessToken ? "Access token yalnız yaddaşdadır." : "Token mövcud deyil."}</p>
             </Card>
           </aside>
         </div>

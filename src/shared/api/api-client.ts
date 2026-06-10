@@ -1,3 +1,4 @@
+import { refreshSessionFromBridge, signalSessionExpired } from "../auth/session-bridge";
 import { ApiError, type ApiErrorDetails } from "./api-error";
 
 type ApiRequestOptions = {
@@ -5,9 +6,11 @@ type ApiRequestOptions = {
   body?: unknown;
   token?: string | null;
   credentials?: RequestCredentials;
+  retryOn401?: boolean;
 };
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080").replace(/\/$/, "");
+let refreshPromise: Promise<{ accessToken?: string | null } | null> | null = null;
 
 function normalizeErrorMessage(status: number, payload: unknown) {
   if (typeof payload === "string" && payload.trim()) {
@@ -72,26 +75,45 @@ async function parseResponse(response: Response) {
   return text || undefined;
 }
 
+async function attemptSessionRefresh() {
+  if (!refreshPromise) {
+    refreshPromise = refreshSessionFromBridge().finally(() => {
+      refreshPromise = null;
+    });
+  }
+
+  return refreshPromise;
+}
+
 export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}) {
-  const headers = new Headers();
+  const buildHeaders = (token?: string | null) => {
+    const headers = new Headers();
 
-  if (options.body !== undefined) {
-    headers.set("Content-Type", "application/json");
-  }
+    if (options.body !== undefined) {
+      headers.set("Content-Type", "application/json");
+    }
 
-  if (options.token) {
-    headers.set("Authorization", `Bearer ${options.token}`);
-  }
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
+    return headers;
+  };
+
+  const shouldRetryOn401 = options.retryOn401 ?? Boolean(options.token);
+
+  const executeRequest = (token?: string | null) =>
+    fetch(`${API_BASE_URL}${path}`, {
+      method: options.method ?? "GET",
+      headers: buildHeaders(token),
+      credentials: options.credentials ?? "same-origin",
+      body: options.body === undefined ? undefined : JSON.stringify(options.body)
+    });
 
   let response: Response;
 
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
-      method: options.method ?? "GET",
-      headers,
-      credentials: options.credentials ?? "same-origin",
-      body: options.body === undefined ? undefined : JSON.stringify(options.body)
-    });
+    response = await executeRequest(options.token);
   } catch {
     throw new ApiError(
       "Serverlə əlaqə qurmaq mümkün olmadı. Zəhmət olmasa bir az sonra yenidən cəhd edin.",
@@ -99,6 +121,23 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
       undefined,
       true
     );
+  }
+
+  if (response.status === 401 && shouldRetryOn401) {
+    try {
+      const refreshedSession = await attemptSessionRefresh();
+      const refreshedToken = refreshedSession?.accessToken;
+
+      if (refreshedToken) {
+        response = await executeRequest(refreshedToken);
+      }
+    } catch {
+      signalSessionExpired();
+    }
+
+    if (response.status === 401) {
+      signalSessionExpired();
+    }
   }
 
   const payload = await parseResponse(response);

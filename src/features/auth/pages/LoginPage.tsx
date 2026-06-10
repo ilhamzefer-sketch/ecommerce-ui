@@ -2,12 +2,13 @@ import { ArrowRight } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { getFriendlyErrorMessage } from "../../../shared/api/api-error";
-import { hasErrors, required, type ValidationErrors } from "../../../shared/forms/validation";
+import { hasErrors, mapDetailsToErrors, required, type ValidationErrors } from "../../../shared/forms/validation";
 import { BrandMark } from "../../../shared/ui/BrandMark";
 import { Button } from "../../../shared/ui/Button";
 import { Notice } from "../../../shared/ui/Notice";
 import { PasswordField } from "../../../shared/ui/PasswordField";
 import { TextField } from "../../../shared/ui/TextField";
+import { normalizeRoles } from "../../account/account-types";
 import { useAuth } from "../use-auth";
 
 type LoginField = "usernameOrEmail" | "password";
@@ -15,6 +16,7 @@ type LoginField = "usernameOrEmail" | "password";
 type LocationState = {
   warning?: string;
   from?: string;
+  sessionExpired?: boolean;
 };
 
 export function LoginPage() {
@@ -25,7 +27,8 @@ export function LoginPage() {
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<ValidationErrors<LoginField>>({});
-  const [formError, setFormError] = useState<string | null>(state?.warning ?? null);
+  const initialMessage = state?.warning ?? (state?.sessionExpired ? "Sessiyanız başa çatdı. Yenidən daxil olun." : null);
+  const [formError, setFormError] = useState<string | null>(initialMessage);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   function validate() {
@@ -48,10 +51,16 @@ export function LoginPage() {
 
     setIsSubmitting(true);
     try {
-      await login({ usernameOrEmail: usernameOrEmail.trim(), password });
-      navigate(state?.from ?? "/account", { replace: true });
+      const profile = await login({ usernameOrEmail: usernameOrEmail.trim(), password });
+      const from = state?.from;
+      const roles = normalizeRoles(profile.roles);
+      navigate(from ?? (roles.includes("ROLE_ADMIN") ? "/admin" : "/account"), { replace: true });
     } catch (error) {
       setFormError(getFriendlyErrorMessage(error, "Daxil olma məlumatları düzgün deyil."));
+
+      if (error && typeof error === "object" && "details" in error) {
+        setErrors(mapDetailsToErrors<LoginField>((error as { details?: Record<string, string> }).details, ["usernameOrEmail", "password"]));
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -64,7 +73,7 @@ export function LoginPage() {
         <h1 id="login-title">Hesabınıza daxil olun</h1>
         <p>Mizan.az-da hesabınıza təhlükəsiz daxil olun və mövcud xidmətlərdən istifadə edin.</p>
       </div>
-      {formError ? <Notice tone="danger" message={formError} /> : null}
+      {formError ? <Notice tone={state?.sessionExpired ? "warning" : "danger"} message={formError} /> : null}
       <form className="form-stack" onSubmit={handleSubmit} noValidate>
         <TextField
           label="Email və ya istifadəçi adı"

@@ -4,6 +4,7 @@ import { normalizeRoles, type UserProfileResponse } from "../account/account-typ
 import * as authApi from "./auth-api";
 import type { AuthResponse, LoginRequest } from "./auth-types";
 import { AuthContext, type AuthContextValue, type AuthSession, type AuthStatus, type LogoutMode } from "./auth-context-value";
+import { registerSessionBridge } from "../../shared/auth/session-bridge";
 
 const emptySession: AuthSession = {
   accessToken: null
@@ -23,42 +24,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>("booting");
   const [session, setSession] = useState<AuthSession>(emptySession);
   const [user, setUser] = useState<UserProfileResponse | null>(null);
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   const clearSession = useCallback(() => {
     setSession(emptySession);
     setUser(null);
     setStatus("anonymous");
+    setSessionExpired(false);
+  }, []);
+
+  const markSessionExpired = useCallback(() => {
+    setSession(emptySession);
+    setUser(null);
+    setStatus("anonymous");
+    setSessionExpired(true);
   }, []);
 
   const loadUser = useCallback(async (accessToken: string) => {
     const profile = await getCurrentUser(accessToken);
     setUser(profile);
+    return profile;
   }, []);
 
   const applyAuthResponse = useCallback(
     async (response: AuthResponse) => {
       const nextSession = sessionFromResponse(response);
+
       if (!nextSession.accessToken) {
         clearSession();
-        return;
+        throw new Error("Access token is missing from the backend response.");
       }
 
       setSession(nextSession);
-      await loadUser(nextSession.accessToken);
+      const profile = await loadUser(nextSession.accessToken);
       setStatus("authenticated");
+      setSessionExpired(false);
+      return { session: nextSession, user: profile };
     },
     [clearSession, loadUser]
   );
 
   const refresh = useCallback(async () => {
     const response = await authApi.refreshSession();
-    await applyAuthResponse(response);
+    const result = await applyAuthResponse(response);
+    return result.session;
   }, [applyAuthResponse]);
 
   const login = useCallback(
     async (request: LoginRequest) => {
       const response = await authApi.login(request);
-      await applyAuthResponse(response);
+      const result = await applyAuthResponse(response);
+      return result.user;
     },
     [applyAuthResponse]
   );
@@ -66,10 +82,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const reloadUser = useCallback(async () => {
     if (!session.accessToken) {
       clearSession();
-      return;
+      throw new Error("Session is not available.");
     }
 
-    await loadUser(session.accessToken);
+    const profile = await loadUser(session.accessToken);
+    setSessionExpired(false);
+    return profile;
   }, [clearSession, loadUser, session.accessToken]);
 
   const logout = useCallback(
@@ -97,6 +115,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let isMounted = true;
 
+    registerSessionBridge({
+      refreshSession: refresh,
+      onSessionExpired: markSessionExpired
+    });
+
     authApi
       .refreshSession()
       .then(async (response) => {
@@ -113,14 +136,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       isMounted = false;
+      registerSessionBridge(null);
     };
-  }, [applyAuthResponse, clearSession]);
+  }, [applyAuthResponse, clearSession, markSessionExpired, refresh]);
 
   const roles = useMemo(() => normalizeRoles(user?.roles), [user?.roles]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       status,
+      sessionExpired,
       session,
       user,
       roles,
@@ -130,7 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearSession,
       logout
     }),
-    [clearSession, login, logout, refresh, reloadUser, roles, session, status, user]
+    [clearSession, login, logout, refresh, reloadUser, roles, session, sessionExpired, status, user]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
