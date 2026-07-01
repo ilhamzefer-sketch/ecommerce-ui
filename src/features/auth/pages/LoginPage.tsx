@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { getFriendlyErrorMessage } from "../../../shared/api/api-error";
@@ -9,6 +9,7 @@ import { Notice } from "../../../shared/ui/Notice";
 import { PasswordField } from "../../../shared/ui/PasswordField";
 import { TextField } from "../../../shared/ui/TextField";
 import { normalizeRoles } from "../../account/account-types";
+import { AuthVisualPanel } from "../components/AuthVisualPanel";
 import { useAuth } from "../use-auth";
 
 type LoginField = "usernameOrEmail" | "password";
@@ -67,44 +68,61 @@ export function LoginPage() {
   }
 
   return (
-    <section className="auth-card auth-card--entrance" aria-labelledby="login-title">
-      <BrandMark />
-      <div className="auth-card__header">
-        <h1 id="login-title">Hesabınıza daxil olun</h1>
-        <p>Mizan.az-da hesabınıza təhlükəsiz daxil olun və mövcud xidmətlərdən istifadə edin.</p>
-      </div>
-      {formError ? <Notice tone={state?.sessionExpired ? "warning" : "danger"} message={formError} /> : null}
-      <form className="form-stack" onSubmit={handleSubmit} noValidate>
-        <TextField
-          label="Email və ya istifadəçi adı"
-          name="usernameOrEmail"
-          value={usernameOrEmail}
-          onChange={(event) => setUsernameOrEmail(event.target.value)}
-          error={errors.usernameOrEmail}
-          autoComplete="username"
-          placeholder="Email və ya istifadəçi adınızı daxil edin"
-        />
-        <div className="field-row-label">
-          <span>Şifrə</span>
-          <Link to="/forgot-password">Şifrəni unutmusunuz?</Link>
+    <div className="auth-shell auth-shell--login auth-card--entrance">
+      <AuthVisualPanel
+        eyebrow="Təhlükəsiz hesab girişi"
+        title="Alış-veriş təcrübəniz bir hesabda."
+        description="Seçimlərinizə, hesab məlumatlarınıza və MIZAN xidmətlərinə rahat şəkildə davam edin."
+      />
+      <section className="auth-form-panel" aria-labelledby="login-title">
+        <div className="auth-form-panel__brand">
+          <BrandMark compact />
+          <span>
+            <strong>Mizan.az</strong>
+            Şəxsi hesab
+          </span>
         </div>
-        <PasswordField
-          label="Şifrə"
-          className="field--compact-label"
-          name="password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          error={errors.password}
-          autoComplete="current-password"
-          placeholder="Şifrənizi daxil edin"
-        />
-        <Button fullWidth type="submit" isLoading={isSubmitting} icon={<ArrowRight size={19} />}>
-          Daxil ol
-        </Button>
-      </form>
-      <p className="auth-switch">
-        Hesabınız yoxdur? <Link to="/register">Qeydiyyatdan keçin</Link>
-      </p>
-    </section>
+        <div className="auth-card__header auth-card__header--split">
+          <span className="auth-form-panel__eyebrow">
+            <Sparkles size={17} aria-hidden="true" />
+            Yenidən xoş gəlmisiniz
+          </span>
+          <h1 id="login-title">Hesabınıza daxil olun</h1>
+          <p>Məlumatlarınızı daxil edin və qaldığınız yerdən davam edin.</p>
+        </div>
+        {formError ? <Notice tone={state?.sessionExpired ? "warning" : "danger"} message={formError} /> : null}
+        <form className="form-stack" onSubmit={handleSubmit} noValidate>
+          <TextField
+            label="Email və ya istifadəçi adı"
+            name="usernameOrEmail"
+            value={usernameOrEmail}
+            onChange={(event) => setUsernameOrEmail(event.target.value)}
+            error={errors.usernameOrEmail}
+            autoComplete="username"
+            placeholder="Email və ya istifadəçi adınızı daxil edin"
+          />
+          <div className="field-row-label">
+            <span>Şifrə</span>
+            <Link to="/forgot-password">Şifrəni unutmusunuz?</Link>
+          </div>
+          <PasswordField
+            label="Şifrə"
+            className="field--compact-label"
+            name="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            error={errors.password}
+            autoComplete="current-password"
+            placeholder="Şifrənizi daxil edin"
+          />
+          <Button fullWidth type="submit" isLoading={isSubmitting} icon={<ArrowRight size={19} />}>
+            Daxil ol
+          </Button>
+        </form>
+        <p className="auth-switch">
+          Hesabınız yoxdur? <Link to="/register">Qeydiyyatdan keçin</Link>
+        </p>
+      </section>
+    </div>
   );
 }

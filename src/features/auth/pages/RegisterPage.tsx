@@ -1,4 +1,4 @@
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Sparkles } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { getFriendlyErrorMessage } from "../../../shared/api/api-error";
@@ -8,6 +8,7 @@ import { Button } from "../../../shared/ui/Button";
 import { Notice } from "../../../shared/ui/Notice";
 import { PasswordField } from "../../../shared/ui/PasswordField";
 import { TextField } from "../../../shared/ui/TextField";
+import { AuthVisualPanel } from "../components/AuthVisualPanel";
 import { register } from "../auth-api";
 
 type RegisterField = "username" | "email" | "password" | "confirmPassword";
@@ -83,71 +84,88 @@ export function RegisterPage() {
   }
 
   return (
-    <section className="auth-card auth-card--wide auth-card--entrance" aria-labelledby="register-title">
-      <BrandMark />
-      <div className="auth-card__header">
-        <h1 id="register-title">Yeni hesab yaradın</h1>
-        <p>Hesab məlumatlarınızı daxil edin. Təsdiq prosesi backend tərəfindən göndərilən tokenlə tamamlanır.</p>
-      </div>
-      {formError ? <Notice tone="danger" message={formError} /> : null}
-      {successMessage ? <Notice tone="success" title="Qeydiyyat tamamlandı" message={successMessage} /> : null}
-      <form className="form-stack" onSubmit={handleSubmit} noValidate>
-        <div className="form-grid">
-          <TextField
-            label="İstifadəçi adı"
-            name="username"
-            value={form.username}
-            onChange={(event) => updateField("username", event.target.value)}
-            error={errors.username}
-            autoComplete="username"
-          />
-          <TextField
-            label="E-poçt"
-            name="email"
-            type="email"
-            value={form.email}
-            onChange={(event) => updateField("email", event.target.value)}
-            error={errors.email}
-            autoComplete="email"
-          />
-          <TextField
-            label="Ad"
-            name="firstName"
-            value={form.firstName}
-            onChange={(event) => updateField("firstName", event.target.value)}
-            autoComplete="given-name"
-          />
-          <TextField
-            label="Soyad"
-            name="lastName"
-            value={form.lastName}
-            onChange={(event) => updateField("lastName", event.target.value)}
-            autoComplete="family-name"
-          />
+    <div className="auth-shell auth-shell--register auth-card--entrance">
+      <AuthVisualPanel
+        eyebrow="MIZAN üzvlüyü"
+        title="Yeni imkanlara bir addımda qoşulun."
+        description="Hesabınızı yaradın, seçimlərinizi qoruyun və gələcək MIZAN xidmətlərinə hazır olun."
+      />
+      <section className="auth-form-panel" aria-labelledby="register-title">
+        <div className="auth-form-panel__brand">
+          <BrandMark compact />
+          <span>
+            <strong>Mizan.az</strong>
+            Yeni hesab
+          </span>
         </div>
-        <PasswordField
-          label="Şifrə"
-          name="password"
-          value={form.password}
-          onChange={(event) => updateField("password", event.target.value)}
-          error={errors.password}
-          autoComplete="new-password"
-        />
-        <PasswordField
-          label="Şifrə təkrarı"
-          name="confirmPassword"
-          value={form.confirmPassword}
-          onChange={(event) => updateField("confirmPassword", event.target.value)}
-          error={errors.confirmPassword}
-          autoComplete="new-password"
-        />
-        <Button fullWidth type="submit" isLoading={isSubmitting} icon={<CheckCircle2 size={19} />}>
-          Qeydiyyatdan keç
-        </Button>
-      </form>
-      <p className="auth-switch">
-        Artıq hesabınız var? <Link to="/login">Daxil olun</Link>
-      </p>
-    </section>
+        <div className="auth-card__header auth-card__header--split">
+          <span className="auth-form-panel__eyebrow">
+            <Sparkles size={17} aria-hidden="true" />
+            MIZAN dünyasına başlayın
+          </span>
+          <h1 id="register-title">Yeni hesab yaradın</h1>
+          <p>Məlumatlarınızı daxil edin. Təsdiq keçidi e-poçtunuza göndəriləcək.</p>
+        </div>
+        {formError ? <Notice tone="danger" message={formError} /> : null}
+        {successMessage ? <Notice tone="success" title="Qeydiyyat tamamlandı" message={successMessage} /> : null}
+        <form className="form-stack" onSubmit={handleSubmit} noValidate>
+          <div className="form-grid">
+            <TextField
+              label="İstifadəçi adı"
+              name="username"
+              value={form.username}
+              onChange={(event) => updateField("username", event.target.value)}
+              error={errors.username}
+              autoComplete="username"
+            />
+            <TextField
+              label="E-poçt"
+              name="email"
+              type="email"
+              value={form.email}
+              onChange={(event) => updateField("email", event.target.value)}
+              error={errors.email}
+              autoComplete="email"
+            />
+            <TextField
+              label="Ad"
+              name="firstName"
+              value={form.firstName}
+              onChange={(event) => updateField("firstName", event.target.value)}
+              autoComplete="given-name"
+            />
+            <TextField
+              label="Soyad"
+              name="lastName"
+              value={form.lastName}
+              onChange={(event) => updateField("lastName", event.target.value)}
+              autoComplete="family-name"
+            />
+          </div>
+          <PasswordField
+            label="Şifrə"
+            name="password"
+            value={form.password}
+            onChange={(event) => updateField("password", event.target.value)}
+            error={errors.password}
+            autoComplete="new-password"
+          />
+          <PasswordField
+            label="Şifrə təkrarı"
+            name="confirmPassword"
+            value={form.confirmPassword}
+            onChange={(event) => updateField("confirmPassword", event.target.value)}
+            error={errors.confirmPassword}
+            autoComplete="new-password"
+          />
+          <Button fullWidth type="submit" isLoading={isSubmitting} icon={<CheckCircle2 size={19} />}>
+            Qeydiyyatdan keç
+          </Button>
+        </form>
+        <p className="auth-switch">
+          Artıq hesabınız var? <Link to="/login">Daxil olun</Link>
+        </p>
+      </section>
+    </div>
   );
 }
