@@ -12,7 +12,7 @@ export function AuthVisualPanel({ eyebrow, title, description }: AuthVisualPanel
       <img className="auth-visual__image" src="/assets/mizan-auth-atmosphere.png" alt="" />
       <div className="auth-visual__top">
         <span className="auth-visual__logo">
-          <img src="/assets/mizan-logo.png" alt="" />
+          <img src="/assets/mizan-logo-professional.png" alt="" />
         </span>
         <strong>MIZAN.AZ</strong>
       </div>
